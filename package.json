@@ -1,0 +1,16 @@
+{
+  "name": "devcraft-workspace",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Full-stack web applications and software development workspace",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "build:frontend": "npm --prefix frontend run build",
+    "dev:backend": "python backend/main.py",
+    "lint:frontend": "npm --prefix frontend run lint"
+  },
+  "keywords": ["web-development", "react", "fastapi", "typescript", "software"],
+  "author": "",
+  "license": "MIT"
+}
