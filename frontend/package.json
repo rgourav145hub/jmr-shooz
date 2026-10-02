@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node server/index.js"
+    "start": "node server/index.js",
+    "sync": "powershell -ExecutionPolicy Bypass -File ./sync-live.ps1"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
