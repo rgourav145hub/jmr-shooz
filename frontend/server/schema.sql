@@ -1,5 +1,5 @@
 -- ========================================================
--- JMR SHOOZ — Complete PostgreSQL Schema for pgAdmin
+-- JMR SHOOZ — Complete Database Schema for PostgreSQL
 -- ========================================================
 
 -- 1. USERS TABLE
@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS users (
     ifsc VARCHAR(50),
     branch VARCHAR(100),
     upi_id VARCHAR(100),
-    status VARCHAR(50) DEFAULT 'pending',
-    registered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    status VARCHAR(50) DEFAULT 'active',
+    registered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 2. OTPS TABLE
@@ -32,12 +32,12 @@ CREATE TABLE IF NOT EXISTS otps (
     purpose VARCHAR(50),
     is_used BOOLEAN DEFAULT FALSE,
     expires_at TIMESTAMP WITH TIME ZONE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. BANK DETAILS TABLE (Company Bank Info)
+-- 3. BANK DETAILS TABLE (Company Info)
 CREATE TABLE IF NOT EXISTS bank_details (
-    id VARCHAR(100) PRIMARY KEY DEFAULT 'jmr-company-bank-01',
+    id VARCHAR(100) PRIMARY KEY,
     account_name VARCHAR(255),
     bank_name VARCHAR(255),
     account_number VARCHAR(100),
@@ -47,10 +47,10 @@ CREATE TABLE IF NOT EXISTS bank_details (
     upi_id VARCHAR(100),
     company_gstin VARCHAR(50),
     company_pan VARCHAR(50),
-    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Initial default row for bank_details if not exists
+-- Default Row for Bank Details
 INSERT INTO bank_details (id, account_name, bank_name, account_number, ifsc_code, branch, account_type, upi_id)
 VALUES ('jmr-company-bank-01', 'JMR Shooz Footwear Ltd', 'HDFC Bank', '50200012345678', 'HDFC0001234', 'Main Branch', 'Current', 'jmrshooz@upi')
 ON CONFLICT (id) DO NOTHING;
@@ -70,8 +70,8 @@ CREATE TABLE IF NOT EXISTS brands (
     banner_image TEXT,
     logo_text VARCHAR(100),
     logo_subtext VARCHAR(100),
-    highlights JSONB DEFAULT '[]',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    highlights TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 5. PRODUCTS TABLE
@@ -81,16 +81,16 @@ CREATE TABLE IF NOT EXISTS products (
     brand_id VARCHAR(100),
     brand_name VARCHAR(255),
     category VARCHAR(100),
-    suggested_retail_price NUMERIC,
-    wholesale_rate NUMERIC,
+    suggested_retail_price TEXT,
+    wholesale_rate TEXT,
     moq VARCHAR(50),
     carton_size VARCHAR(50),
     size_range VARCHAR(100),
-    colors JSONB DEFAULT '[]',
+    colors TEXT,
     image TEXT,
     description TEXT,
     materials VARCHAR(255),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 6. ORDERS TABLE
@@ -106,11 +106,11 @@ CREATE TABLE IF NOT EXISTS orders (
     shipping_address TEXT,
     payment_method VARCHAR(50),
     notes TEXT,
-    items JSONB DEFAULT '[]',
+    items TEXT,
     total_items INT DEFAULT 0,
     total_amount NUMERIC DEFAULT 0,
     status VARCHAR(50) DEFAULT 'Pending',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 7. QUERIES / INQUIRIES TABLE
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS queries (
     product_sku VARCHAR(100),
     subject VARCHAR(255),
     message TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 8. BANNERS TABLE
@@ -140,16 +140,16 @@ CREATE TABLE IF NOT EXISTS banners (
     suggested_retail NUMERIC,
     wholesale_rate NUMERIC,
     sort_order INT DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 9. OWNER PROFILES TABLE
 CREATE TABLE IF NOT EXISTS owner_profiles (
-    id VARCHAR(100) PRIMARY KEY DEFAULT 'jmr-owners-01',
-    owners JSONB DEFAULT '[]',
-    godown JSONB DEFAULT '{}',
-    founder_story JSONB DEFAULT '{}',
-    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id VARCHAR(100) PRIMARY KEY,
+    owners TEXT,
+    godown TEXT,
+    founder_story TEXT,
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT INTO owner_profiles (id)
@@ -169,6 +169,6 @@ CREATE TABLE IF NOT EXISTS schemes_events (
     discount_code VARCHAR(100),
     image TEXT,
     description TEXT,
-    terms JSONB DEFAULT '[]',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    terms TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

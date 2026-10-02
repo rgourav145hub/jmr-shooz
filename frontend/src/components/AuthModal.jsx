@@ -96,11 +96,11 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
     setSelectedRole(initialRole);
     if (initialRole === 'admin') {
       setRegData(prev => ({ ...prev, accountType: 'admin' }));
-      if (!loginIdentifier) setLoginIdentifier('admin@jmrshooz.com');
     } else {
       setRegData(prev => ({ ...prev, accountType: 'retailer' }));
-      if (loginIdentifier === 'admin@jmrshooz.com') setLoginIdentifier('');
     }
+    setLoginIdentifier('');
+    setLoginPassword('');
     setError('');
     setSuccessInfo(null);
     setOtpSent(false);
@@ -460,27 +460,6 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
     }
   };
 
-  // Demo Credentials Helpers
-  const fillDemoAdmin = () => {
-    setMode('login');
-    setLoginIdentifier('admin@jmrshooz.com');
-    setLoginPassword('admin123');
-    setError('');
-  };
-
-  const fillDemoRetailer = () => {
-    setMode('login');
-    setLoginIdentifier('RET-2026-1042');
-    setLoginPassword('retailer123');
-    setError('');
-  };
-
-  const fillDemoOtpLogin = () => {
-    setMode('otp');
-    setOtpIdentifier('admin@jmrshooz.com');
-    setError('');
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
       <div 
@@ -720,7 +699,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
             )
           ) : mode === 'login' ? (
             /* 1. PASSWORD LOGIN FORM */
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4" autoComplete="off">
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
                   Email, Mobile, or Retailer ID
@@ -729,10 +708,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
+                    name="auth_user"
+                    autoComplete="off"
                     required
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
-                    placeholder="e.g. admin@jmrshooz.com or RET-2026-1042"
+                    placeholder="e.g. your-email@company.com or RET-ID"
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-brand-card border border-brand-border text-white text-sm focus:outline-none focus:border-brand-gold transition-colors"
                   />
                 </div>
@@ -755,6 +736,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
                   <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="password"
+                    name="auth_secret"
+                    autoComplete="new-password"
                     required
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
@@ -767,7 +750,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-gold via-brand-gold-light to-brand-gold-dark text-brand-dark font-bold text-xs uppercase tracking-widest hover:brightness-110 shadow-gold-sm transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-brand-gold via-brand-gold-light to-brand-gold-dark text-brand-dark font-bold text-xs uppercase tracking-widest hover:brightness-110 shadow-gold-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
                 <span>{loading ? 'Authenticating...' : 'Access B2B Portal'}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -778,36 +761,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
                 <button
                   type="button"
                   onClick={() => { setMode('otp'); setOtpIdentifier(loginIdentifier); setError(''); }}
-                  className="text-xs font-bold text-brand-gold hover:underline"
+                  className="text-xs font-bold text-brand-gold hover:underline cursor-pointer"
                 >
                   Login with OTP →
                 </button>
-              </div>
-
-              {/* Quick Demo Logins Bar */}
-              <div className="pt-4 border-t border-brand-border/60">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-brand-muted block text-center mb-2.5">
-                  1-Click Instant Demo Accounts
-                </span>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={fillDemoAdmin}
-                    className="p-2.5 rounded-lg bg-brand-card hover:bg-brand-cardHover border border-brand-gold/30 text-[11px] font-semibold text-slate-200 text-left transition-colors"
-                  >
-                    <div className="text-brand-gold font-bold">Admin Portal</div>
-                    <div className="text-[10px] text-slate-400">admin@jmrshooz.com</div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={fillDemoRetailer}
-                    className="p-2.5 rounded-lg bg-brand-card hover:bg-brand-cardHover border border-brand-gold/30 text-[11px] font-semibold text-slate-200 text-left transition-colors"
-                  >
-                    <div className="text-brand-gold font-bold">Retailer Portal</div>
-                    <div className="text-[10px] text-slate-400">RET-2026-1042</div>
-                  </button>
-                </div>
               </div>
             </form>
           ) : mode === 'otp' ? (
@@ -841,20 +798,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full py-3 rounded-xl bg-brand-gold text-brand-dark font-bold text-xs uppercase tracking-widest hover:brightness-110 shadow-gold-sm transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl bg-brand-gold text-brand-dark font-bold text-xs uppercase tracking-widest hover:brightness-110 shadow-gold-sm transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <span>{loading ? 'Generating Code...' : '📲 Send 6-Digit OTP'}</span>
                   </button>
-
-                  <div className="pt-2 text-center">
-                    <button
-                      type="button"
-                      onClick={fillDemoOtpLogin}
-                      className="text-[11px] text-brand-gold underline"
-                    >
-                      Use Demo Account (admin@jmrshooz.com)
-                    </button>
-                  </div>
                 </form>
               ) : (
                 /* Step 2: Verify OTP */

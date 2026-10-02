@@ -495,8 +495,8 @@ export default function Navbar({
               })}
             </nav>
 
-            {/* In-app Notification Bell (ONLY for authenticated users) */}
-            {currentUser && <NotificationBell className="shrink-0" />}
+            {/* In-app Notification Bell (ONLY for authenticated users - Desktop) */}
+            {currentUser && <NotificationBell className="hidden lg:flex shrink-0" />}
 
             {/* Wholesale Cart Button (Desktop & Tablet) - ONLY for logged-in users */}
             {currentUser && (
