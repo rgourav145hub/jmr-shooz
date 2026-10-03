@@ -1161,6 +1161,25 @@ export function saveStoredCart(cartItems) {
   } catch (e) {}
 }
 
+// WISHLIST / LIKES STORAGE
+const WISHLIST_KEY = 'jmr_wishlist_v1';
+
+export function getStoredWishlist() {
+  try {
+    const raw = localStorage.getItem(WISHLIST_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+export function saveStoredWishlist(wishlistItems) {
+  try {
+    localStorage.setItem(WISHLIST_KEY, JSON.stringify(wishlistItems));
+    window.dispatchEvent(new Event('jmr_wishlist_updated'));
+  } catch (e) {}
+}
+
 // SCHEMES, TRADE EVENTS & PHOTOS SHOWCASE STORAGE
 const SCHEMES_EVENTS_KEY = 'jmr_schemes_events_v1';
 

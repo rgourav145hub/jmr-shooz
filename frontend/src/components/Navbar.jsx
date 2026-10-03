@@ -21,10 +21,12 @@ import {
   Package,
   Layers,
   Edit3,
-  ShoppingCart
+  ShoppingCart,
+  Heart
 } from 'lucide-react';
 import { useAdminEdit } from '../contexts/AdminEditContext';
 import { useCart } from '../contexts/CartContext';
+import { useWishlist } from '../contexts/WishlistContext';
 import { getProductMrp } from '../utils/pricing';
 import NotificationBell from './NotificationBell';
 
@@ -39,6 +41,7 @@ export default function Navbar({
   const navigate = useNavigate();
   const { currentUser, logout, isAdmin, isRetailer, hasPermission } = useAuth();
   const { totalItems, totalAmount, openCart } = useCart();
+  const { totalWishlist, openWishlist } = useWishlist();
   const { openEditTicker, isEditModeActive } = useAdminEdit();
   const canEditTicker = isAdmin && isEditModeActive && hasPermission('manage_cms');
   
@@ -498,6 +501,23 @@ export default function Navbar({
             {/* In-app Notification Bell (ONLY for authenticated users - Desktop) */}
             {currentUser && <NotificationBell className="hidden lg:flex shrink-0" />}
 
+            {/* Wholesale Shortlist / Wishlist Button (Desktop & Tablet) */}
+            <button
+              onClick={openWishlist}
+              className="relative hidden sm:flex items-center gap-1.5 px-2 xl:px-2.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-rose-500/30 hover:border-rose-400 text-rose-300 transition-all group shadow-sm active:scale-95 shrink-0"
+              title="View Shortlisted Articles (Wishlist)"
+            >
+              <div className="relative">
+                <Heart className={`w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform ${totalWishlist > 0 ? 'fill-rose-500' : ''}`} />
+                {totalWishlist > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-gradient-to-r from-rose-500 to-pink-500 text-white font-black text-[9px] min-w-3.5 h-3.5 px-1 rounded-full flex items-center justify-center shadow-md animate-pulse">
+                    {totalWishlist > 99 ? '99+' : totalWishlist}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs font-bold text-slate-200 hidden xl:inline">Wishlist</span>
+            </button>
+
             {/* Wholesale Cart Button (Desktop & Tablet) - ONLY for logged-in users */}
             {currentUser && (
               <button
@@ -630,10 +650,24 @@ export default function Navbar({
               )}
             </div>
 
-            {/* Mobile Menu & Cart Toggle Buttons */}
+            {/* Mobile Menu, Wishlist & Cart Toggle Buttons */}
             <div className="flex lg:hidden items-center gap-1.5 sm:gap-2">
               {/* Mobile Notification Bell (ONLY for authenticated users) */}
               {currentUser && <NotificationBell />}
+
+              {/* Mobile Wishlist Button */}
+              <button
+                onClick={openWishlist}
+                className="relative p-2 rounded-xl bg-slate-900 border border-rose-500/40 text-rose-400 hover:text-rose-300 active:scale-95 cursor-pointer"
+                title="Shortlisted Articles (Wishlist)"
+              >
+                <Heart className={`w-4 h-4 ${totalWishlist > 0 ? 'fill-rose-500 text-rose-500' : ''}`} />
+                {totalWishlist > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-rose-500 text-white font-black text-[9px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center">
+                    {totalWishlist}
+                  </span>
+                )}
+              </button>
 
               {/* Mobile Cart Button (ONLY for logged-in users) */}
               {currentUser && (

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { X, Check, ShieldCheck, Truck, Package, ArrowRight, Building2, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { X, Check, ShieldCheck, Truck, Package, ArrowRight, Building2, ShoppingCart, Plus, Minus, Heart } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useWishlist } from '../contexts/WishlistContext';
 import { getProductMrp } from '../utils/pricing';
 
 export default function ProductQuickViewModal({ product, onClose, onEnquire, openAuthModal }) {
   const { currentUser } = useAuth();
   const { addToCart, openCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [addedSuccess, setAddedSuccess] = useState(false);
   const [specification, setSpecification] = useState('');
@@ -14,6 +16,7 @@ export default function ProductQuickViewModal({ product, onClose, onEnquire, ope
     ? product.colors[0] 
     : (product?.color || 'Classic Black');
   const [selectedColor, setSelectedColor] = useState(defaultColor);
+  const isLiked = isInWishlist(product?.id);
 
   useEffect(() => {
     if (!product) return;
@@ -46,10 +49,25 @@ export default function ProductQuickViewModal({ product, onClose, onEnquire, ope
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-brand-dark/80 text-slate-300 hover:text-white hover:bg-brand-card transition-colors border border-brand-border"
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-brand-dark/80 text-slate-300 hover:text-white hover:bg-brand-card transition-colors border border-brand-border cursor-pointer shadow-md"
           aria-label="Close"
         >
           <X className="w-5 h-5" />
+        </button>
+
+        {/* Wishlist / Like Toggle Button */}
+        <button
+          type="button"
+          onClick={() => toggleWishlist(product)}
+          className={`absolute top-4 left-4 z-20 p-2 rounded-full backdrop-blur-md transition-all shadow-md active:scale-75 cursor-pointer ${
+            isLiked 
+              ? 'bg-red-500/20 text-red-400 border border-red-500/40 hover:bg-red-500/30 scale-105' 
+              : 'bg-brand-dark/80 text-slate-300 hover:text-red-400 hover:bg-brand-card transition-colors border border-brand-border'
+          }`}
+          title={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist / Like'}
+          aria-label={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist / Like'}
+        >
+          <Heart className={`w-4 h-4 transition-transform ${isLiked ? 'fill-red-500 stroke-red-500 scale-110' : 'stroke-[2]'}`} />
         </button>
 
         {/* Product Image Panel */}
@@ -309,8 +327,22 @@ export default function ProductQuickViewModal({ product, onClose, onEnquire, ope
               );
             })()}
 
-            {/* Second row: Cart (if logged in) or Enquire */}
+            {/* Second row: Wishlist, Cart (if logged in), and Enquire */}
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => toggleWishlist(product)}
+                className={`py-2.5 px-3 rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer text-xs font-bold shrink-0 ${
+                  isLiked 
+                    ? 'bg-red-500/15 border-red-500/40 text-red-400 shadow-sm' 
+                    : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-300 hover:text-red-400'
+                }`}
+                title={isLiked ? 'Article Saved to Wishlist' : 'Save to Wishlist / Shortlist'}
+              >
+                <Heart className={`w-4 h-4 ${isLiked ? 'fill-red-400 stroke-red-400' : ''}`} />
+                <span className="hidden sm:inline">{isLiked ? 'Saved' : 'Wishlist'}</span>
+              </button>
+
               {currentUser && (
                 <button
                   type="button"
@@ -318,10 +350,10 @@ export default function ProductQuickViewModal({ product, onClose, onEnquire, ope
                     onClose();
                     openCart();
                   }}
-                  className="py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="py-2.5 px-3.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-bold text-xs uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                 >
                   <ShoppingCart className="w-3.5 h-3.5" />
-                  <span>View Cart</span>
+                  <span>Cart</span>
                 </button>
               )}
 

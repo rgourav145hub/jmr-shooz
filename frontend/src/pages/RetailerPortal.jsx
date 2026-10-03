@@ -35,8 +35,11 @@ import {
   MapPin,
   Phone,
   Mail,
-  Sparkles
+  Sparkles,
+  Heart
 } from 'lucide-react';
+import { useWishlist } from '../contexts/WishlistContext';
+import { useCart } from '../contexts/CartContext';
 import { 
   getStoredProducts, 
   getStoredBrands, 
@@ -57,7 +60,9 @@ import {
 } from '../services/api';
 
 const RetailerPortal = function({ currentUser, openQueryModal, onNotification }) {
-  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog', 'orders', 'bank', 'history'
+  const [activeTab, setActiveTab] = useState('catalog'); // 'catalog', 'orders', 'wishlist', 'profile', 'bank', 'history'
+  const { wishlistItems, isInWishlist, toggleWishlist, removeFromWishlist, totalWishlist, openWishlist } = useWishlist();
+  const { addToCart } = useCart();
   const [products, setProducts] = useState([]);
   const [brands, setBrands] = useState([]);
   const [myQueries, setMyQueries] = useState([]);
@@ -609,6 +614,18 @@ const RetailerPortal = function({ currentUser, openQueryModal, onNotification })
           </button>
 
           <button
+            onClick={() => setActiveTab('wishlist')}
+            className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
+              activeTab === 'wishlist'
+                ? 'border-rose-500 text-rose-400 bg-brand-surface'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${totalWishlist > 0 ? 'fill-rose-500 text-rose-500' : 'text-rose-400'}`} />
+            <span>Wishlist ({totalWishlist})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('profile')}
             className={`flex items-center gap-2 px-5 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition-all shrink-0 ${
               activeTab === 'profile'
@@ -702,6 +719,23 @@ const RetailerPortal = function({ currentUser, openQueryModal, onNotification })
                       <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-[10px] font-bold text-white border border-white/20">
                         {product.category}
                       </div>
+
+                      {/* Wishlist Heart Toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWishlist(product);
+                        }}
+                        className={`absolute bottom-3 right-3 p-2 rounded-full backdrop-blur-md transition-all shadow-md active:scale-90 ${
+                          isInWishlist(product.id)
+                            ? 'bg-rose-500 text-white shadow-rose-500/40'
+                            : 'bg-black/50 text-white/80 hover:text-white hover:bg-black/80'
+                        }`}
+                        title={isInWishlist(product.id) ? 'Remove from Shortlist' : 'Add to Shortlist / Wishlist'}
+                      >
+                        <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
+                      </button>
                     </div>
 
                     <div className="p-5 space-y-3">
@@ -1034,6 +1068,163 @@ const RetailerPortal = function({ currentUser, openQueryModal, onNotification })
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: SHORTLIST / WISHLIST */}
+        {activeTab === 'wishlist' && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Header Banner */}
+            <div className="bg-brand-surface rounded-2xl border border-rose-500/30 p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[10px] font-bold uppercase tracking-widest border border-rose-500/30 mb-2">
+                  <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                  <span>Wholesale Footwear Shortlist</span>
+                </div>
+                <h3 className="font-display text-xl font-bold text-white">Your Saved & Liked Footwear Articles</h3>
+                <p className="text-xs text-brand-muted mt-1">
+                  Articles you have marked for stock replenishment. Move directly to wholesale cart or place quick carton booking.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                {wishlistItems.length > 0 && (
+                  <button
+                    onClick={() => {
+                      wishlistItems.forEach(item => addToCart(item, 1));
+                      if (onNotification) {
+                        onNotification({
+                          message: 'All Shortlisted Items Added',
+                          subtext: `${wishlistItems.length} articles added to your wholesale cart.`
+                        });
+                      }
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider shadow-md hover:brightness-110 active:scale-95 transition-all"
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    <span>Add All to Cart</span>
+                  </button>
+                )}
+                <button
+                  onClick={openWishlist}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-card hover:bg-brand-cardHover border border-rose-500/40 text-rose-300 font-bold text-xs uppercase tracking-wider transition-all"
+                >
+                  <Heart className="w-4 h-4" />
+                  <span>View Drawer</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Wishlist Items Grid or Empty State */}
+            {wishlistItems.length === 0 ? (
+              <div className="bg-brand-surface rounded-3xl border border-brand-border p-12 text-center shadow-xl max-w-md mx-auto space-y-4">
+                <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/30 flex items-center justify-center mx-auto text-rose-400">
+                  <Heart className="w-8 h-8" />
+                </div>
+                <h4 className="text-lg font-bold text-white">Your Shortlist is Empty</h4>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  You haven't liked or shortlisted any footwear articles yet. Explore the B2B catalog and tap the heart icon on any shoe to shortlist it.
+                </p>
+                <button
+                  onClick={() => setActiveTab('catalog')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-gold to-brand-gold-dark text-brand-dark font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-gold-sm transition-all"
+                >
+                  <Package className="w-4 h-4" />
+                  <span>Browse B2B Catalog</span>
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {wishlistItems.map((product) => (
+                  <div 
+                    key={product.id}
+                    className="bg-brand-surface rounded-2xl border border-brand-border hover:border-rose-500/50 transition-all overflow-hidden flex flex-col justify-between group shadow-xl"
+                  >
+                    <div>
+                      <div className="relative h-48 bg-brand-dark overflow-hidden">
+                        <img 
+                          src={product.image} 
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                        />
+                        <div className="absolute top-3 left-3 px-2.5 py-0.5 rounded-full bg-brand-gold text-brand-dark text-[10px] font-bold uppercase tracking-wider">
+                          {product.brandName}
+                        </div>
+                        <div className="absolute top-3 right-3 px-2.5 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-[10px] font-bold text-white border border-white/20">
+                          {product.category}
+                        </div>
+
+                        {/* Remove from Wishlist button */}
+                        <button
+                          type="button"
+                          onClick={() => removeFromWishlist(product.id)}
+                          className="absolute bottom-3 right-3 p-2 rounded-full bg-rose-500 text-white hover:bg-rose-600 shadow-md active:scale-90 transition-all"
+                          title="Remove from Shortlist"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <div className="p-5 space-y-3">
+                        <div>
+                          <h3 className="font-bold text-white text-base leading-snug group-hover:text-rose-400 transition-colors">
+                            {product.name}
+                          </h3>
+                          <p className="text-[11px] text-brand-muted font-mono mt-0.5">SKU: {product.sku}</p>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-brand-card/60 border border-brand-border space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400 font-medium">B2B Wholesale Rate:</span>
+                            <span className="text-brand-gold font-mono font-bold text-sm">{product.wholesaleRate || `₹${product.price}`}</span>
+                          </div>
+                          {product.suggestedRetailPrice && (
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-slate-400 font-medium">Suggested Retail MSRP:</span>
+                              <span className="text-slate-300 font-mono line-through">{product.suggestedRetailPrice}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-xs border-t border-brand-border/60 pt-1.5 text-emerald-400 font-medium">
+                            <span>Standard Carton Size:</span>
+                            <span>{product.moq || 'Assorted Size Curve'}</span>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] text-slate-300 space-y-1">
+                          <p><strong className="text-slate-400">Sizes:</strong> {product.sizeRange || 'UK 6 - 10'}</p>
+                          <p><strong className="text-slate-400">Colors:</strong> {Array.isArray(product.colors) ? product.colors.join(', ') : product.colors}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 pt-0 flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          addToCart(product, 1);
+                          if (onNotification) {
+                            onNotification({
+                              message: 'Article Added to Cart',
+                              subtext: `${product.name} (1 set / carton) added to wholesale cart.`
+                            });
+                          }
+                        }}
+                        className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-sm transition-all active:scale-95"
+                      >
+                        <ShoppingCart className="w-4 h-4" />
+                        <span>Add to Cart</span>
+                      </button>
+                      <button
+                        onClick={() => setBookingProduct(product)}
+                        className="px-3 py-2.5 rounded-xl bg-brand-card hover:bg-brand-cardHover border border-brand-border text-slate-200 hover:text-white font-bold text-xs transition-colors"
+                        title="Book Carton Directly"
+                      >
+                        Book
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

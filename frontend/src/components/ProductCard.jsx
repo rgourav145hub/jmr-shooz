@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
-import { Eye, Star, Truck, Zap, ShoppingBag, ShieldCheck, ChevronRight, Edit3, Trash2, ShoppingCart, Check } from 'lucide-react';
+import { Eye, Star, Truck, Zap, ShoppingBag, ShieldCheck, ChevronRight, Edit3, Trash2, ShoppingCart, Check, Heart } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAdminEdit } from '../contexts/AdminEditContext';
 import { useCart } from '../contexts/CartContext';
+import { useWishlist } from '../contexts/WishlistContext';
 import { getProductMrp } from '../utils/pricing';
 
 export default function ProductCard({ product, onQuickView, onEnquire }) {
   const { currentUser, isAdmin, isMasterAdmin, hasPermission } = useAuth();
   const { isEditModeActive, openEditProduct, confirmDeleteProduct } = useAdminEdit();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [justAdded, setJustAdded] = useState(false);
+
+  const isLiked = isInWishlist(product.id);
 
   const canEdit = isAdmin && isEditModeActive && hasPermission('manage_products');
   const canDelete = isAdmin && isEditModeActive && (isMasterAdmin || hasPermission('delete_products'));
@@ -94,6 +98,24 @@ export default function ProductCard({ product, onQuickView, onEnquire }) {
           className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 ease-out"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#131b2e] via-transparent to-transparent opacity-40 group-hover:opacity-20 transition-opacity"></div>
+        
+        {/* Wishlist / Like Toggle Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleWishlist(product);
+          }}
+          className={`absolute top-2.5 right-2.5 z-20 p-2 rounded-full backdrop-blur-md transition-all shadow-md active:scale-75 cursor-pointer ${
+            isLiked 
+              ? 'bg-red-500/25 text-red-400 border border-red-500/50 hover:bg-red-500/35 scale-105' 
+              : 'bg-black/60 text-slate-300 border border-white/15 hover:text-red-400 hover:bg-black/80 hover:scale-110'
+          }`}
+          title={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist / Like'}
+          aria-label={isLiked ? 'Remove from Wishlist' : 'Add to Wishlist / Like'}
+        >
+          <Heart className={`w-4 h-4 transition-transform ${isLiked ? 'fill-red-500 stroke-red-500 scale-110' : 'stroke-[2]'}`} />
+        </button>
         
         {/* Quick View Floating Action Overlay */}
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/40 backdrop-blur-[2px]">

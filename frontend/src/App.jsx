@@ -21,7 +21,9 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { DataProvider } from './contexts/DataContext';
 import { AdminEditProvider } from './contexts/AdminEditContext';
 import { CartProvider } from './contexts/CartContext';
+import { WishlistProvider } from './contexts/WishlistContext';
 import CartDrawer from './components/CartDrawer';
+import WishlistDrawer from './components/WishlistDrawer';
 import MobileBottomNav from './components/MobileBottomNav';
 
 class ErrorBoundary extends Component {
@@ -77,9 +79,11 @@ export default function App() {
       <AuthProvider>
         <DataProvider>
           <CartProvider>
-            <Router>
-              <AppContent />
-            </Router>
+            <WishlistProvider>
+              <Router>
+                <AppContent />
+              </Router>
+            </WishlistProvider>
           </CartProvider>
         </DataProvider>
       </AuthProvider>
@@ -295,6 +299,17 @@ function AppContent() {
             subtext: `Order #${order.orderId} submitted. Confirmation email dispatched.`
           });
         }} 
+      />
+
+      {/* Wishlist Drawer */}
+      <WishlistDrawer 
+        openAuthModal={handleOpenAuth}
+        openEnquiryModal={(prod) => {
+          handleProductEnquire(prod);
+        }}
+        onQuickView={(prod) => {
+          setQuickViewProduct(prod);
+        }}
       />
 
       {/* Toast Alert */}
