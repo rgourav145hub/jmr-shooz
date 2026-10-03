@@ -575,5 +575,58 @@ export async function apiDeleteSchemeEvent(id) {
   return { success: true, message: 'Deleted successfully' };
 }
 
+// 15. WISHLIST & PRODUCT SHORTLIST DATABASE API
+export async function apiGetWishlist(userId = 'guest') {
+  const res = await request(`/wishlist?userId=${encodeURIComponent(userId)}`, {
+    method: 'GET'
+  });
+  if (res.ok && res.data && Array.isArray(res.data.items)) {
+    return res.data.items;
+  }
+  return null;
+}
+
+export async function apiAddToWishlist(userId = 'guest', product) {
+  if (!product || !product.id) return { success: false };
+  const res = await request('/wishlist', {
+    method: 'POST',
+    body: JSON.stringify({
+      userId,
+      productId: product.id,
+      product
+    })
+  });
+  return res.ok ? res.data : { success: false };
+}
+
+export async function apiRemoveFromWishlist(userId = 'guest', productId) {
+  if (!productId) return { success: false };
+  const res = await request(`/wishlist/${encodeURIComponent(productId)}?userId=${encodeURIComponent(userId)}`, {
+    method: 'DELETE'
+  });
+  return res.ok ? res.data : { success: false };
+}
+
+export async function apiSyncWishlist(userId = 'guest', items = []) {
+  const res = await request('/wishlist/sync', {
+    method: 'POST',
+    body: JSON.stringify({
+      userId,
+      items
+    })
+  });
+  if (res.ok && res.data && Array.isArray(res.data.items)) {
+    return res.data.items;
+  }
+  return null;
+}
+
+export async function apiClearWishlist(userId = 'guest') {
+  const res = await request(`/wishlist/clear?userId=${encodeURIComponent(userId)}`, {
+    method: 'DELETE'
+  });
+  return res.ok ? res.data : { success: false };
+}
+
 
 

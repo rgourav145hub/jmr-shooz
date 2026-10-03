@@ -343,6 +343,28 @@ let memorySchemesEvents = [
   }
 ];
 
+let memoryWishlists = [];
+
+async function ensureWishlistTable() {
+  try {
+    if (pool && typeof pool.query === 'function') {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS wishlists (
+          id VARCHAR(255) PRIMARY KEY,
+          user_id VARCHAR(255) NOT NULL,
+          product_id VARCHAR(255) NOT NULL,
+          product_data JSONB,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT unique_user_product UNIQUE (user_id, product_id)
+        );
+      `);
+      await pool.query(`CREATE INDEX IF NOT EXISTS idx_wishlists_user_id ON wishlists(user_id);`);
+    }
+  } catch (err) {
+    // console.warn('Wishlist table creation warning:', err.message);
+  }
+}
+
 // Helper to find all matching accounts across DB and memory
 async function findUsersByIdentifier(identifier, preferredRole = '') {
   if (!identifier) return [];
@@ -1405,6 +1427,194 @@ const server = http.createServer(async (req, res) => {
         message: `Order #${orderId} details updated successfully`,
         order: targetOrder || body
       });
+    }
+
+    // 13.8. WISHLIST & PRODUCT SHORTLIST DATABASE CRUD
+    if (pathname === '/api/wishlist' || pathname.startsWith('/api/wishlist/')) {
+      await ensureWishlistTable();
+
+      // GET user's wishlist from PostgreSQL database
+      if (method === 'GET') {
+        const userId = url.searchParams.get('userId') || 'guest';
+        let items = [];
+
+        try {
+          const dbRes = await pool.query(
+            'SELECT * FROM wishlists WHERE user_id = $1 ORDER BY created_at DESC',
+            [userId]
+          );
+          if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+            items = dbRes.rows.map(r => {
+              const productObj = typeof r.product_data === 'string' ? JSON.parse(r.product_data) : (r.product_data || {});
+              return {
+                ...productObj,
+                wishlistDbId: r.id,
+                userId: r.user_id,
+                productId: r.product_id,
+                createdAt: r.created_at
+              };
+            });
+          }
+        } catch (e) {
+          // fallback to memory
+        }
+
+        if (items.length === 0) {
+          items = memoryWishlists
+            .filter(w => w.userId === userId)
+            .map(w => ({
+              ...w.product,
+              wishlistDbId: w.id,
+              userId: w.userId,
+              productId: w.productId,
+              createdAt: w.createdAt
+            }));
+        }
+
+        return sendJson(req, res, 200, { success: true, count: items.length, items });
+      }
+
+      // POST: Add or update product in wishlist database
+      if (method === 'POST' && pathname === '/api/wishlist') {
+        const body = await parseBody(req);
+        const userId = (body.userId || 'guest').trim();
+        const product = body.product || {};
+        const productId = String(body.productId || product.id || '').trim();
+
+        if (!productId) {
+          return sendJson(req, res, 400, { error: 'productId or product object is required' });
+        }
+
+        const id = crypto.randomUUID();
+
+        // 1. PostgreSQL DB Upsert
+        try {
+          await pool.query(`
+            INSERT INTO wishlists (id, user_id, product_id, product_data, created_at)
+            VALUES ($1, $2, $3, $4, NOW())
+            ON CONFLICT (user_id, product_id)
+            DO UPDATE SET product_data = EXCLUDED.product_data, created_at = NOW()
+          `, [id, userId, productId, JSON.stringify(product)]);
+        } catch (e) {
+          console.warn('Wishlist DB upsert note:', e.message);
+        }
+
+        // 2. In-memory update
+        const existingIdx = memoryWishlists.findIndex(w => w.userId === userId && w.productId === productId);
+        const entry = {
+          id,
+          userId,
+          productId,
+          product,
+          createdAt: new Date().toISOString()
+        };
+        if (existingIdx !== -1) {
+          memoryWishlists[existingIdx] = entry;
+        } else {
+          memoryWishlists.unshift(entry);
+        }
+
+        return sendJson(req, res, 201, {
+          success: true,
+          message: 'Article added to wishlist successfully in database',
+          item: entry
+        });
+      }
+
+      // POST: Bulk sync wishlist (e.g. on login or device sync)
+      if (method === 'POST' && pathname === '/api/wishlist/sync') {
+        const body = await parseBody(req);
+        const userId = (body.userId || 'guest').trim();
+        const rawItems = Array.isArray(body.items) ? body.items : [];
+
+        for (const item of rawItems) {
+          const productId = String(item.id || item.productId || '').trim();
+          if (!productId) continue;
+
+          const id = crypto.randomUUID();
+          try {
+            await pool.query(`
+              INSERT INTO wishlists (id, user_id, product_id, product_data, created_at)
+              VALUES ($1, $2, $3, $4, NOW())
+              ON CONFLICT (user_id, product_id)
+              DO UPDATE SET product_data = EXCLUDED.product_data, created_at = NOW()
+            `, [id, userId, productId, JSON.stringify(item)]);
+          } catch (e) {}
+
+          const existingIdx = memoryWishlists.findIndex(w => w.userId === userId && w.productId === productId);
+          if (existingIdx === -1) {
+            memoryWishlists.unshift({
+              id,
+              userId,
+              productId,
+              product: item,
+              createdAt: new Date().toISOString()
+            });
+          }
+        }
+
+        // Return latest DB merged list
+        let merged = [];
+        try {
+          const dbRes = await pool.query('SELECT * FROM wishlists WHERE user_id = $1 ORDER BY created_at DESC', [userId]);
+          if (dbRes && dbRes.rows && dbRes.rows.length > 0) {
+            merged = dbRes.rows.map(r => ({
+              ...(typeof r.product_data === 'string' ? JSON.parse(r.product_data) : (r.product_data || {})),
+              wishlistDbId: r.id,
+              userId: r.user_id,
+              productId: r.product_id,
+              createdAt: r.created_at
+            }));
+          }
+        } catch (e) {}
+
+        if (merged.length === 0) {
+          merged = memoryWishlists.filter(w => w.userId === userId).map(w => w.product);
+        }
+
+        return sendJson(req, res, 200, {
+          success: true,
+          message: 'Wishlist synchronized with database',
+          count: merged.length,
+          items: merged
+        });
+      }
+
+      // DELETE: Remove item from wishlist or clear
+      if (method === 'DELETE') {
+        let productId = '';
+        let userId = url.searchParams.get('userId') || '';
+
+        const parts = pathname.split('/');
+        if (parts.length >= 4 && parts[3]) {
+          productId = parts[3];
+        }
+
+        const body = await parseBody(req).catch(() => ({}));
+        if (!productId && body.productId) productId = body.productId;
+        if (!userId && body.userId) userId = body.userId;
+
+        userId = (userId || 'guest').trim();
+        productId = String(productId).trim();
+
+        if (pathname.endsWith('/clear') || body.clearAll) {
+          try {
+            await pool.query('DELETE FROM wishlists WHERE user_id = $1', [userId]);
+          } catch (e) {}
+          memoryWishlists = memoryWishlists.filter(w => w.userId !== userId);
+          return sendJson(req, res, 200, { success: true, message: 'Wishlist cleared in database' });
+        }
+
+        if (productId) {
+          try {
+            await pool.query('DELETE FROM wishlists WHERE user_id = $1 AND (product_id = $2 OR id = $2)', [userId, productId]);
+          } catch (e) {}
+          memoryWishlists = memoryWishlists.filter(w => !(w.userId === userId && (w.productId === productId || w.id === productId)));
+          return sendJson(req, res, 200, { success: true, message: 'Article removed from wishlist in database' });
+        }
+
+        return sendJson(req, res, 400, { error: 'productId or user_id required to delete' });
+      }
     }
 
     // 14. BANNERS CRUD
