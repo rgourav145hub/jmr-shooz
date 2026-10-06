@@ -390,6 +390,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
         setRegOtpTimer(60);
         if (res.simulatedOtp) {
           setRegDemoCode(res.simulatedOtp);
+          setRegOtp(res.simulatedOtp);
         }
       } else {
         setError(res.error || 'Failed to send OTP to email. Please verify your email.');
@@ -411,6 +412,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
         setRegOtpTimer(60);
         if (res.simulatedOtp) {
           setRegDemoCode(res.simulatedOtp);
+          setRegOtp(res.simulatedOtp);
         }
       } else {
         setError(res.error || 'Failed to resend verification OTP.');

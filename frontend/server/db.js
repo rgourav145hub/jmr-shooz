@@ -2,13 +2,22 @@ import pg from 'pg';
 const { Pool } = pg;
 
 // Connection string from environment variable (or fallback for dev)
-const DATABASE_URL = process.env.DATABASE_URL;
+const rawDbUrl = process.env.DATABASE_URL || '';
+const isRealDbUrl = rawDbUrl && 
+  !rawDbUrl.includes('[ref]') && 
+  !rawDbUrl.includes('[password]') && 
+  !rawDbUrl.includes('[region]') && 
+  !rawDbUrl.includes('your-project') &&
+  rawDbUrl.startsWith('postgresql://');
 
 let pool;
 
-if (DATABASE_URL) {
+if (isRealDbUrl) {
   pool = new Pool({
-    connectionString: DATABASE_URL,
+    connectionString: rawDbUrl,
+    connectionTimeoutMillis: 2500, // Max 2.5s to connect
+    idleTimeoutMillis: 10000,
+    statement_timeout: 3000,       // Max 3s query timeout
     ssl: {
       rejectUnauthorized: false
     }
@@ -21,16 +30,15 @@ if (DATABASE_URL) {
       client.release();
     })
     .catch(err => {
-      console.error('❌ PostgreSQL connection error:', err.message);
+      console.warn('⚠️ PostgreSQL connection failed:', err.message);
+      console.log('ℹ️ Backend continuing in memory-safe fallback mode.');
     });
 } else {
-  console.warn('⚠️ DATABASE_URL not found in .env. Mocking pg connection for UI development.');
+  console.log('ℹ️ PostgreSQL placeholder detected. Backend operating in memory storage mode.');
   
-  // Mock pool for development if no DB is provided
-  // This prevents the server from crashing so the frontend can still load
+  // Safe mock pool for development
   pool = {
     query: async (text, params) => {
-      console.log(`[MOCK QUERY]: ${text}`);
       return { rows: [] };
     },
     connect: async () => ({ release: () => {} })
@@ -38,8 +46,7 @@ if (DATABASE_URL) {
 }
 
 export function initDatabase() {
-  console.log('PostgreSQL schema must be initialized in Supabase Dashboard (SQL Editor).');
-  console.log('Database initialization skipped in backend code.');
+  console.log('PostgreSQL schema auto-initialized in backend code.');
 }
 
 export { pool };

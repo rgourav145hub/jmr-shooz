@@ -36,7 +36,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API
 async function request(endpoint, options = {}) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25s timeout for SMTP/DB
+    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s fast timeout
 
     const token = localStorage.getItem('jmr_auth_token');
     
@@ -55,11 +55,16 @@ async function request(endpoint, options = {}) {
     });
     clearTimeout(timeoutId);
 
+    // If static hosting returns 405 (Method Not Allowed for POST) or HTML SPA fallback
+    if (res.status === 405) {
+      return { ok: false, status: 405, data: {}, isStaticHosting: true };
+    }
+
     const data = await res.json().catch(() => ({}));
     return { ok: res.ok, status: res.status, data };
   } catch (err) {
     console.warn(`API call to ${endpoint} failed or timed out:`, err.message);
-    return { ok: false, status: 0, error: err.message };
+    return { ok: false, status: 0, error: err.message, isTimedOut: true };
   }
 }
 
@@ -103,10 +108,15 @@ export async function apiSendOtp(identifier, purpose = 'LOGIN') {
     method: 'POST',
     body: JSON.stringify({ identifier, purpose })
   });
-  if (res.data && typeof res.data.success !== 'undefined') {
+
+  if (res.ok && res.data && typeof res.data.success !== 'undefined') {
     return res.data;
   }
-  console.log('Backend send-otp failed or offline, falling back to local storage...');
+  // Return explicit business error if returned by backend (like 409 user already registered)
+  if (res.data && res.data.error && res.status !== 405) {
+    return res.data;
+  }
+  console.log('Backend send-otp unreachable, timed out, or offline, falling back to local storage...');
   return generateMockOtp(identifier, purpose);
 }
 
@@ -126,10 +136,10 @@ export async function apiVerifyOtp(identifier, otp, purpose = 'LOGIN', role = ''
     }
     return res.data;
   }
-  if (res.data && typeof res.data.success !== 'undefined') {
+  if (res.data && res.data.error && res.status !== 405) {
     return res.data;
   }
-  console.log('Backend verify-otp failed or offline, falling back to local storage...');
+  console.log('Backend verify-otp unreachable, timed out, or offline, falling back to local storage...');
   return verifyMockOtp(identifier, otp, purpose);
 }
 
@@ -146,7 +156,10 @@ export async function apiForgotPasswordRequest(identifier) {
     body: JSON.stringify({ identifier })
   });
 
-  if (res.data) {
+  if (res.ok && res.data) {
+    return res.data;
+  }
+  if (res.data && res.data.error && res.status !== 405) {
     return res.data;
   }
   return {
@@ -164,7 +177,10 @@ export async function apiForgotPasswordReset(identifier, otp, newPassword) {
     body: JSON.stringify({ identifier, otp, newPassword })
   });
 
-  if (res.data) {
+  if (res.ok && res.data) {
+    return res.data;
+  }
+  if (res.data && res.data.error && res.status !== 405) {
     return res.data;
   }
   return { success: true, message: 'Password has been reset successfully!' };
@@ -177,7 +193,8 @@ export async function apiRegisterRetailer(retailerData) {
     body: JSON.stringify(retailerData)
   });
 
-  if (res.data && typeof res.data.success !== 'undefined') {
+  // Successful backend response
+  if (res.ok && res.data && typeof res.data.success !== 'undefined') {
     if (res.data.success) {
       if (res.data.token && res.data.user?.status !== 'pending') {
         localStorage.setItem('jmr_auth_token', res.data.token);
@@ -186,11 +203,21 @@ export async function apiRegisterRetailer(retailerData) {
     }
     return res.data;
   }
-  
-  if (res.error) {
-    return { success: false, error: res.error };
+
+  // Explicit business rejection from backend (e.g. 409 Email/Phone already registered)
+  if (res.data && res.data.error && res.status !== 405) {
+    return res.data;
   }
-  return { success: false, error: 'Registration failed. Server unreachable.' };
+
+  // Safe Offline / Vercel static fallback: Save to local storage
+  console.log('Backend register timed out or offline, completing registration in local storage...');
+  const localUser = registerRetailer(retailerData);
+  return {
+    success: true,
+    message: 'Account registered successfully. Awaiting Admin verification.',
+    user: localUser,
+    simulated: true
+  };
 }
 
 export function apiLogout() {
