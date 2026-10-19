@@ -1312,7 +1312,11 @@ const server = http.createServer(async (req, res) => {
           customerEmail: body.customerEmail || body.email || '',
           customerPhone: body.customerPhone || body.phone || '',
           shippingAddress: body.shippingAddress || body.address || 'Store Delivery',
-          paymentMethod: body.paymentMethod || 'Bank Transfer / RTGS',
+          paymentMethod: body.paymentMethod || 'Online Payment Gateway (Razorpay)',
+          paymentStatus: body.paymentStatus || (body.paymentMethod?.includes('Razorpay') ? 'Paid' : 'Pending'),
+          paymentId: body.paymentId || body.razorpayPaymentId || '',
+          razorpayOrderId: body.razorpayOrderId || '',
+          utrNumber: body.utrNumber || '',
           notes: body.notes || '',
           specification: (body.specification || '').trim(),
           items,
@@ -1320,7 +1324,7 @@ const server = http.createServer(async (req, res) => {
           totalPairs,
           totalItems,
           totalAmount,
-          status: 'Pending',
+          status: body.status || (body.paymentStatus === 'Paid' ? 'Confirmed' : 'Pending'),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString()
         };
@@ -1334,7 +1338,7 @@ const server = http.createServer(async (req, res) => {
           `, [
             orderId, orderId, orderObj.userId, orderObj.customerName, orderObj.companyName,
             orderObj.customerEmail, orderObj.customerPhone, orderObj.city, orderObj.shippingAddress,
-            orderObj.paymentMethod, orderObj.notes, JSON.stringify(items), totalItems, totalAmount, 'Pending'
+            orderObj.paymentMethod, orderObj.notes, JSON.stringify(items), totalItems, totalAmount, orderObj.status
           ]);
         } catch (e) {}
 

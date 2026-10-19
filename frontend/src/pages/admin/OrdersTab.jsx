@@ -335,6 +335,19 @@ export default function OrdersTab({ orders = [], onOrderUpdated, onNotification 
                         <span className="px-2 py-0.5 rounded-lg bg-brand-surface border border-brand-border text-slate-300 text-[10px] font-medium block w-max">
                           {order.paymentMethod || 'Bank Transfer'}
                         </span>
+                        {order.paymentStatus === 'Paid' ? (
+                          <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
+                            ✓ Paid Online ({order.paymentId ? order.paymentId.slice(-8) : 'Razorpay'})
+                          </span>
+                        ) : order.paymentStatus === 'Pending Verification' ? (
+                          <span className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-bold border border-blue-500/30">
+                            UTR: {order.utrNumber || order.paymentId || 'Submitted'}
+                          </span>
+                        ) : (
+                          <span className="inline-block mt-1 text-[10px] text-slate-500">
+                            Remittance Due
+                          </span>
+                        )}
                       </td>
 
                       {/* Status Selector */}
@@ -437,8 +450,20 @@ export default function OrdersTab({ orders = [], onOrderUpdated, onNotification 
                     <span className="text-[10px] text-slate-400 block uppercase">Destination Station:</span>
                     <p className="text-base font-bold text-amber-300">📍 {selectedOrder.station || selectedOrder.city || 'Central Hub'}</p>
                   </div>
-                  <p className="text-slate-200 font-medium mt-1">Delivery Address: {selectedOrder.shippingAddress}</p>
-                  <p className="text-slate-400">Payment: <strong className="text-emerald-400">{selectedOrder.paymentMethod}</strong></p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-slate-400">Payment:</span>
+                    <strong className="text-emerald-400">{selectedOrder.paymentMethod}</strong>
+                    {selectedOrder.paymentStatus === 'Paid' && (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 font-mono">
+                        ✓ Paid Online ({selectedOrder.paymentId || 'Razorpay'})
+                      </span>
+                    )}
+                    {(selectedOrder.utrNumber || (selectedOrder.paymentMethod?.includes('UPI') && selectedOrder.paymentId)) && (
+                      <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 text-[10px] font-bold border border-blue-500/30 font-mono">
+                        UTR: {selectedOrder.utrNumber || selectedOrder.paymentId}
+                      </span>
+                    )}
+                  </div>
                   {selectedOrder.notes && (
                     <p className="text-amber-300 text-[11px] bg-amber-950/20 p-2 rounded-xl border border-amber-500/20 mt-1">
                       Transport Note: {selectedOrder.notes}

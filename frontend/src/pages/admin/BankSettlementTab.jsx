@@ -1,16 +1,19 @@
-import React from 'react';
-import { Building2, Save, Trash2, ShieldCheck, Mail, Phone, Users, Plus, CheckCircle, RotateCcw, Eye, ImageIcon, Upload, X, MapPin, CreditCard, Download, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Building2, Save, Trash2, ShieldCheck, Mail, Phone, Users, Plus, CheckCircle, RotateCcw, Eye, ImageIcon, Upload, X, MapPin, CreditCard, Download, Check, Zap, QrCode } from 'lucide-react';
 import ImageUploader from '../../components/ImageUploader';
 
 const BankSettlementTab = (props) => {
   const { 
     activeTab, 
     bankSaveSuccess, 
-    companyBank, 
+    companyBank = {}, 
     handleCompanyBankChange, 
     handleResetCompanyBank, 
-    handleSaveCompanyBank
+    handleSaveCompanyBank,
+    retailersList = []
   } = props;
+  
+  const [showSecret, setShowSecret] = useState(false);
   
   return (
     <>
@@ -207,10 +210,151 @@ const BankSettlementTab = (props) => {
               <div className="pt-2 flex justify-end">
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-gold text-brand-dark font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-gold-sm transition-all"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-brand-gold text-brand-dark font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-gold-sm transition-all cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>Update & Save to Database</span>
+                </button>
+              </div>
+            </form>
+
+            {/* SECTION 1.5: ONLINE PAYMENT GATEWAY (RAZORPAY & INSTANT UPI) */}
+            <form onSubmit={handleSaveCompanyBank} className="bg-brand-surface rounded-2xl border border-blue-500/30 p-6 sm:p-8 shadow-xl space-y-6">
+              <div className="border-b border-brand-border/80 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 text-[10px] font-bold uppercase tracking-widest border border-blue-500/30 mb-1.5">
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>Instant Payment Gateway & UPI QR</span>
+                  </div>
+                  <h4 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>Razorpay Checkout & Direct UPI QR Configuration</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Enable retailers to pay instantly online using UPI (GPay, PhonePe, Paytm, BHIM), Debit/Credit Cards, NetBanking, or Direct UPI QR.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                    companyBank.razorpayKeyId?.startsWith('rzp_live')
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                  }`}>
+                    {companyBank.razorpayKeyId?.startsWith('rzp_live') ? '● Live Production Mode' : '● Test / Sandbox Mode'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Razorpay Toggle & Key */}
+                <div className="space-y-4 bg-brand-card/40 p-4 rounded-xl border border-brand-border/60">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-white">Razorpay Checkout SDK</h5>
+                      <p className="text-[11px] text-slate-400">Card, NetBanking, Wallet & UPI popup</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={companyBank.razorpayEnabled !== false}
+                        onChange={(e) => handleCompanyBankChange('razorpayEnabled', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-brand-card peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-gold"></div>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Razorpay Key ID (Public Key) <span className="text-brand-gold">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={companyBank.razorpayKeyId || ''}
+                      onChange={(e) => handleCompanyBankChange('razorpayKeyId', e.target.value.trim())}
+                      placeholder="e.g. rzp_test_1DP5mmOlF5G5ag or rzp_live_xxxxxxxx"
+                      className="w-full px-4 py-2.5 rounded-xl bg-brand-card border border-brand-border text-white text-xs font-mono focus:outline-none focus:border-brand-gold"
+                    />
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      Dashboard &gt; Settings &gt; API Keys se apna Key ID copy karein. Test key: <code className="text-brand-gold">rzp_test_1DP5mmOlF5G5ag</code>
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center justify-between">
+                      <span>Razorpay Key Secret (Server Side)</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowSecret(!showSecret)}
+                        className="text-[10px] text-brand-gold hover:underline flex items-center gap-1 cursor-pointer"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>{showSecret ? 'Hide' : 'Show'}</span>
+                      </button>
+                    </label>
+                    <input
+                      type={showSecret ? "text" : "password"}
+                      value={companyBank.razorpayKeySecret || ''}
+                      onChange={(e) => handleCompanyBankChange('razorpayKeySecret', e.target.value.trim())}
+                      placeholder="Optional secret key"
+                      className="w-full px-4 py-2.5 rounded-xl bg-brand-card border border-brand-border text-white text-xs font-mono focus:outline-none focus:border-brand-gold"
+                    />
+                  </div>
+                </div>
+
+                {/* Direct UPI QR Code Option */}
+                <div className="space-y-4 bg-brand-card/40 p-4 rounded-xl border border-brand-border/60">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-white">Direct Dynamic UPI QR</h5>
+                      <p className="text-[11px] text-slate-400">Generate real-time scan & pay QR for retail orders</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={companyBank.upiQrEnabled !== false}
+                        onChange={(e) => handleCompanyBankChange('upiQrEnabled', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-brand-card peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      Merchant Official UPI ID (VPA) <span className="text-brand-gold">*</span>
+                    </label>
+                    <div className="relative">
+                      <QrCode className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={companyBank.upiId || ''}
+                        onChange={(e) => handleCompanyBankChange('upiId', e.target.value.trim())}
+                        placeholder="e.g. jmrshooz@hdfcbank or paytm-12345@paytm"
+                        className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-brand-card border border-brand-border text-white text-xs font-mono focus:outline-none focus:border-brand-gold"
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-400 block mt-1">
+                      Cart checkout par retailer ko is UPI ID par exact consignment amount ka QR code scan karne ka option milega.
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-blue-950/20 border border-blue-500/20 rounded-xl text-[11px] text-blue-300 flex items-start gap-2">
+                    <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                    <span>
+                      Retailer UPI payment karne ke baad 12-digit UTR reference enter karega, jisse admin panel me easily verify kiya ja sake.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-brand-gold to-brand-gold-dark text-brand-dark font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-gold-sm transition-all cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Save Payment Gateway Configuration</span>
                 </button>
               </div>
             </form>

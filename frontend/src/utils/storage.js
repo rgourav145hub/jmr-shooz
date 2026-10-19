@@ -749,6 +749,10 @@ export const INITIAL_BANK_DETAILS = {
   upiId: 'jmrshooz@hdfcbank',
   companyGstin: '07AAACJ1234F1Z8',
   companyPan: 'AAACJ1234F',
+  razorpayEnabled: true,
+  razorpayKeyId: 'rzp_test_1DP5mmOlF5G5ag', // Safe Test Key ready to test
+  razorpayKeySecret: '',
+  upiQrEnabled: true,
   lastUpdated: new Date().toISOString()
 };
 

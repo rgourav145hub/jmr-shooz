@@ -704,6 +704,7 @@ export default function AdminPortal({ onNotification, setCurrentView }) {
           handleCompanyBankChange={handleCompanyBankChange} 
           handleResetCompanyBank={handleResetCompanyBank} 
           handleSaveCompanyBank={handleSaveCompanyBank} 
+          retailersList={users.filter(u => u.userType === 'retailer' || !u.userType)}
         />
 
         {/* Tab 7: Pending Approvals */}

@@ -16,12 +16,18 @@ import {
   MapPin, 
   CreditCard, 
   FileText,
-  AlertCircle
+  AlertCircle,
+  Zap,
+  QrCode,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { apiPlaceOrder } from '../services/api';
 import { addNotification } from '../utils/notifications';
+import { openRazorpayCheckout, generateUpiPaymentLink, getUpiQrCodeUrl } from '../utils/razorpay';
+import { getBankDetails } from '../utils/storage';
 
 export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
   const { 
@@ -45,6 +51,11 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
   const [error, setError] = useState('');
   const [placedOrder, setPlacedOrder] = useState(null);
 
+  // Bank & Payment Gateway settings
+  const [bankDetails, setBankDetails] = useState(getBankDetails());
+  const [utrNumber, setUtrNumber] = useState('');
+  const [copiedUpi, setCopiedUpi] = useState(false);
+
   const [formData, setFormData] = useState({
     customerName: '',
     companyName: '',
@@ -53,13 +64,14 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
     station: '',
     city: '',
     shippingAddress: '',
-    paymentMethod: 'Bank Transfer / RTGS',
+    paymentMethod: 'Online Payment Gateway (Razorpay - UPI/Cards/NetBanking)',
     notes: '',
     specification: ''
   });
 
-  // Pre-fill user data when modal opens or user logs in
+  // Pre-fill user data and fresh bank/gateway details when modal opens or user logs in
   useEffect(() => {
+    setBankDetails(getBankDetails());
     if (currentUser) {
       const derivedPartyName = currentUser.companyName || (currentUser.userType === 'admin' ? 'JMR Wholesale Central' : (currentUser.name ? `${currentUser.name} Footwear` : ''));
       const derivedStation = currentUser.city || currentUser.station || '';
@@ -148,6 +160,53 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
     try {
       const retailerId = currentUser?.retailerId || currentUser?.id || 'RET-STORE';
 
+      let paymentStatus = 'Pending';
+      let paymentId = '';
+      let razorpayOrderId = '';
+
+      // 1. Process Online Payment Gateway (Razorpay) if chosen
+      if (formData.paymentMethod.includes('Razorpay')) {
+        const tempOrderId = `ORD-${Date.now().toString().slice(-6)}`;
+        try {
+          const rzpResult = await openRazorpayCheckout({
+            amount: totalAmount,
+            orderId: tempOrderId,
+            partyName: partyName,
+            customerName: formData.customerName.trim(),
+            customerEmail: formData.customerEmail.trim(),
+            customerPhone: formData.customerPhone.trim()
+          });
+
+          if (rzpResult.dismissed) {
+            setLoading(false);
+            setError('Payment popup was closed. Please complete the online payment or select another payment option.');
+            return;
+          }
+
+          if (!rzpResult.success) {
+            setLoading(false);
+            setError(rzpResult.error || 'Online payment transaction failed. Please try again.');
+            return;
+          }
+
+          paymentStatus = 'Paid';
+          paymentId = rzpResult.paymentId || '';
+          razorpayOrderId = rzpResult.orderId || '';
+        } catch (gatewayErr) {
+          setLoading(false);
+          setError(gatewayErr.message || 'Error communicating with Razorpay Payment Gateway.');
+          return;
+        }
+      } else if (formData.paymentMethod.includes('UPI QR')) {
+        if (!utrNumber.trim()) {
+          setLoading(false);
+          setError('Please provide the 12-digit UPI / UTR Transaction ID after scanning the QR code.');
+          return;
+        }
+        paymentStatus = 'Pending Verification';
+        paymentId = utrNumber.trim();
+      }
+
       const orderPayload = {
         userId: currentUser?.id || retailerId,
         retailerId: retailerId,
@@ -160,6 +219,10 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
         customerEmail: formData.customerEmail.trim(),
         shippingAddress: formData.shippingAddress.trim(),
         paymentMethod: formData.paymentMethod,
+        paymentStatus,
+        paymentId,
+        razorpayOrderId,
+        utrNumber: utrNumber.trim(),
         notes: formData.notes.trim(),
         specification: (formData.specification || '').trim(),
         items: cartItems.map(item => {
@@ -194,7 +257,7 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
         totalPairs: totalPairs || (totalItems * 12),
         totalItems: totalSets || totalItems,
         totalAmount,
-        status: 'Pending'
+        status: paymentStatus === 'Paid' ? 'Confirmed' : 'Pending'
       };
 
       const res = await apiPlaceOrder(orderPayload);
@@ -205,13 +268,15 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
         setCheckoutStep('success');
         clearCart();
 
+        const statusNote = paymentStatus === 'Paid' ? 'Paid & Confirmed via Razorpay' : 'Pending Verification';
+
         // 1. Notify Admin in-app
         addNotification({
           recipientRole: 'admin',
-          title: 'Naya Wholesale Order Aaya!',
-          message: `Party ${partyName} (${station}) ne ₹${totalAmount.toLocaleString('en-IN')} ka order (${res.order.orderId || res.order.id}) lagaya hai.`,
+          title: paymentStatus === 'Paid' ? '💳 Naya Online Paid Order Aaya!' : 'Naya Wholesale Order Aaya!',
+          message: `Party ${partyName} (${station}) ne ₹${totalAmount.toLocaleString('en-IN')} ka order (${res.order.orderId || res.order.id}) lagaya hai. (${statusNote})`,
           type: 'order',
-          data: { orderId: res.order.orderId || res.order.id, partyName, amount: totalAmount },
+          data: { orderId: res.order.orderId || res.order.id, partyName, amount: totalAmount, paymentStatus, paymentId },
           link: '/admin?tab=orders'
         });
 
@@ -220,9 +285,9 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
           recipientRole: 'retailer',
           recipientId: retailerId,
           title: 'Order Confirmation',
-          message: `Aapka order (${res.order.orderId || res.order.id}) ₹${totalAmount.toLocaleString('en-IN')} successfully receive ho gaya hai. Status: Pending.`,
+          message: `Aapka order (${res.order.orderId || res.order.id}) ₹${totalAmount.toLocaleString('en-IN')} successfully receive ho gaya hai. Status: ${statusNote}.`,
           type: 'order',
-          data: { orderId: res.order.orderId || res.order.id, amount: totalAmount },
+          data: { orderId: res.order.orderId || res.order.id, amount: totalAmount, paymentStatus },
           link: '/retailer'
         });
 
@@ -591,19 +656,268 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                     </span>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1">
-                      Payment Preference
+                  {/* Payment Gateway & Remittance Options */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                      Payment Gateway & Method *
                     </label>
-                    <select
-                      value={formData.paymentMethod}
-                      onChange={(e) => setFormData({ ...formData, paymentMethod: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-brand-card border border-brand-border text-white text-sm focus:outline-none focus:border-brand-gold"
-                    >
-                      <option value="Bank Transfer / RTGS">Bank Transfer / RTGS (Standard)</option>
-                      <option value="Cash on Delivery / Godown Handover">Cash on Delivery / Godown Handover</option>
-                      <option value="Wholesale Credit">Wholesale Credit (Verified Retailers)</option>
-                    </select>
+
+                    <div className="space-y-2">
+                      {/* Option 1: Razorpay Payment Gateway */}
+                      <div 
+                        onClick={() => setFormData({ ...formData, paymentMethod: 'Online Payment Gateway (Razorpay - UPI/Cards/NetBanking)' })}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          formData.paymentMethod.includes('Razorpay')
+                            ? 'bg-brand-gold/10 border-brand-gold ring-1 ring-brand-gold/50 shadow-gold-sm'
+                            : 'bg-brand-card/70 border-brand-border hover:border-slate-500'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2.5">
+                            <div className="mt-0.5 p-1.5 rounded-lg bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                              <Zap className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-white text-xs">Online Payment Gateway (Razorpay)</span>
+                                <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 text-[9px] font-bold uppercase tracking-wider border border-emerald-500/30">
+                                  Auto Confirmed
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-300 mt-0.5">
+                                UPI (Google Pay, PhonePe, Paytm, BHIM), Debit/Credit Cards & NetBanking (50+ Banks)
+                              </p>
+                            </div>
+                          </div>
+                          <input
+                            type="radio"
+                            name="paymentOption"
+                            checked={formData.paymentMethod.includes('Razorpay')}
+                            onChange={() => setFormData({ ...formData, paymentMethod: 'Online Payment Gateway (Razorpay - UPI/Cards/NetBanking)' })}
+                            className="mt-1 text-brand-gold focus:ring-brand-gold"
+                          />
+                        </div>
+
+                        {formData.paymentMethod.includes('Razorpay') && (
+                          <div className="mt-2.5 pt-2 border-t border-brand-border/60 flex items-center justify-between text-[10px] text-slate-300">
+                            <span className="flex items-center gap-1 text-brand-gold font-medium">
+                              <ShieldCheck className="w-3.5 h-3.5" /> 256-Bit SSL Instant Verification
+                            </span>
+                            <span className="text-emerald-400 font-bold">0% Extra Convenience Fee</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Option 2: Direct Dynamic UPI QR */}
+                      <div 
+                        onClick={() => setFormData({ ...formData, paymentMethod: 'Direct Instant UPI QR (Scan & Pay)' })}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          formData.paymentMethod.includes('UPI QR')
+                            ? 'bg-brand-gold/10 border-brand-gold ring-1 ring-brand-gold/50 shadow-gold-sm'
+                            : 'bg-brand-card/70 border-brand-border hover:border-slate-500'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2.5">
+                            <div className="mt-0.5 p-1.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                              <QrCode className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-white text-xs">Direct Instant UPI QR (Scan & Pay)</span>
+                                <span className="px-1.5 py-0.2 rounded bg-brand-gold/20 text-brand-gold text-[9px] font-bold">
+                                  ₹{totalAmount.toLocaleString('en-IN')}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-300 mt-0.5">
+                                Scan exact amount dynamic QR via GPay, PhonePe, Paytm or any UPI App
+                              </p>
+                            </div>
+                          </div>
+                          <input
+                            type="radio"
+                            name="paymentOption"
+                            checked={formData.paymentMethod.includes('UPI QR')}
+                            onChange={() => setFormData({ ...formData, paymentMethod: 'Direct Instant UPI QR (Scan & Pay)' })}
+                            className="mt-1 text-brand-gold focus:ring-brand-gold"
+                          />
+                        </div>
+
+                        {formData.paymentMethod.includes('UPI QR') && (
+                          <div className="mt-3 pt-3 border-t border-brand-border/60 bg-black/40 -mx-3 -mb-3 p-3 rounded-b-xl space-y-3">
+                            <div className="flex flex-col sm:flex-row items-center gap-3">
+                              <div className="p-2 bg-white rounded-xl shadow-lg shrink-0">
+                                <img
+                                  src={getUpiQrCodeUrl(
+                                    generateUpiPaymentLink({
+                                      upiId: bankDetails?.upiId || 'jmrshooz@hdfcbank',
+                                      payeeName: bankDetails?.accountName || 'JMR SHOOZ DISTRIBUTION',
+                                      amount: totalAmount,
+                                      orderId: 'JMR-CART'
+                                    }),
+                                    140
+                                  )}
+                                  alt="Dynamic UPI QR"
+                                  className="w-24 h-24 object-contain"
+                                />
+                              </div>
+                              <div className="space-y-1 text-center sm:text-left flex-1">
+                                <div className="text-[10px] text-slate-400 uppercase tracking-wider">Official Company VPA</div>
+                                <div className="flex items-center justify-center sm:justify-start gap-1.5">
+                                  <code className="text-xs font-mono font-bold text-brand-gold bg-brand-card px-2 py-0.5 rounded border border-brand-border">
+                                    {bankDetails?.upiId || 'jmrshooz@hdfcbank'}
+                                  </code>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigator.clipboard?.writeText(bankDetails?.upiId || 'jmrshooz@hdfcbank');
+                                      setCopiedUpi(true);
+                                      setTimeout(() => setCopiedUpi(false), 2000);
+                                    }}
+                                    className="p-1 rounded bg-brand-card hover:bg-brand-cardHover border border-brand-border text-slate-300 cursor-pointer"
+                                    title="Copy UPI ID"
+                                  >
+                                    {copiedUpi ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                  </button>
+                                </div>
+                                <p className="text-[10px] text-slate-400">
+                                  Kisi bhi app se scan karein aur niche 12-digit UTR enter karein.
+                                </p>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold uppercase text-slate-300 mb-1">
+                                12-Digit UPI / UTR Transaction ID *
+                              </label>
+                              <input
+                                type="text"
+                                required={formData.paymentMethod.includes('UPI QR')}
+                                value={utrNumber}
+                                onChange={(e) => setUtrNumber(e.target.value)}
+                                placeholder="e.g. 403829182736 (From Payment App Confirmation)"
+                                className="w-full px-3 py-1.5 rounded-lg bg-brand-card border border-brand-border text-white text-xs font-mono focus:outline-none focus:border-brand-gold"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Option 3: Standard Bank Transfer / RTGS */}
+                      <div 
+                        onClick={() => setFormData({ ...formData, paymentMethod: 'Bank Transfer / RTGS' })}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          formData.paymentMethod === 'Bank Transfer / RTGS'
+                            ? 'bg-brand-gold/10 border-brand-gold ring-1 ring-brand-gold/50 shadow-gold-sm'
+                            : 'bg-brand-card/70 border-brand-border hover:border-slate-500'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2.5">
+                            <div className="mt-0.5 p-1.5 rounded-lg bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                              <Building2 className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="font-bold text-white text-xs">Bank Transfer / RTGS / NEFT</span>
+                              <p className="text-[11px] text-slate-300 mt-0.5">
+                                Official Company Commercial Remittance Account
+                              </p>
+                            </div>
+                          </div>
+                          <input
+                            type="radio"
+                            name="paymentOption"
+                            checked={formData.paymentMethod === 'Bank Transfer / RTGS'}
+                            onChange={() => setFormData({ ...formData, paymentMethod: 'Bank Transfer / RTGS' })}
+                            className="mt-1 text-brand-gold focus:ring-brand-gold"
+                          />
+                        </div>
+
+                        {formData.paymentMethod === 'Bank Transfer / RTGS' && (
+                          <div className="mt-2.5 pt-2 border-t border-brand-border/60 text-[11px] text-slate-300 space-y-1 bg-black/30 p-2.5 rounded-lg">
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Beneficiary:</span>
+                              <span className="font-bold text-white">{bankDetails?.accountName || 'JMR SHOOZ DISTRIBUTION'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">A/C Number:</span>
+                              <span className="font-mono font-bold text-brand-gold">{bankDetails?.accountNumber || '50200084920194'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">IFSC Code:</span>
+                              <span className="font-mono text-white">{bankDetails?.ifscCode || 'HDFC0001234'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-slate-400">Bank & Branch:</span>
+                              <span className="text-slate-200">{bankDetails?.bankName || 'HDFC Bank Ltd'}</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Option 4: COD / Godown Delivery */}
+                      <div 
+                        onClick={() => setFormData({ ...formData, paymentMethod: 'Cash on Delivery / Godown Handover' })}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          formData.paymentMethod === 'Cash on Delivery / Godown Handover'
+                            ? 'bg-brand-gold/10 border-brand-gold ring-1 ring-brand-gold/50 shadow-gold-sm'
+                            : 'bg-brand-card/70 border-brand-border hover:border-slate-500'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2.5">
+                            <div className="mt-0.5 p-1.5 rounded-lg bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                              <Truck className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="font-bold text-white text-xs">Cash on Delivery / Godown Handover</span>
+                              <p className="text-[11px] text-slate-300 mt-0.5">
+                                Payment upon arrival at destination godown / transport bilti clearance
+                              </p>
+                            </div>
+                          </div>
+                          <input
+                            type="radio"
+                            name="paymentOption"
+                            checked={formData.paymentMethod === 'Cash on Delivery / Godown Handover'}
+                            onChange={() => setFormData({ ...formData, paymentMethod: 'Cash on Delivery / Godown Handover' })}
+                            className="mt-1 text-brand-gold focus:ring-brand-gold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Option 5: Wholesale Credit */}
+                      <div 
+                        onClick={() => setFormData({ ...formData, paymentMethod: 'Wholesale Credit' })}
+                        className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                          formData.paymentMethod === 'Wholesale Credit'
+                            ? 'bg-brand-gold/10 border-brand-gold ring-1 ring-brand-gold/50 shadow-gold-sm'
+                            : 'bg-brand-card/70 border-brand-border hover:border-slate-500'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2.5">
+                            <div className="mt-0.5 p-1.5 rounded-lg bg-slate-500/15 text-slate-400 border border-slate-500/30">
+                              <CreditCard className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="font-bold text-white text-xs">Wholesale Credit (Verified Retailers)</span>
+                              <p className="text-[11px] text-slate-300 mt-0.5">
+                                15-30 days billing cycle for approved partners
+                              </p>
+                            </div>
+                          </div>
+                          <input
+                            type="radio"
+                            name="paymentOption"
+                            checked={formData.paymentMethod === 'Wholesale Credit'}
+                            onChange={() => setFormData({ ...formData, paymentMethod: 'Wholesale Credit' })}
+                            className="mt-1 text-brand-gold focus:ring-brand-gold"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   <div>
@@ -690,8 +1004,30 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-brand-border/60">
                     <span className="text-slate-400">Current Status:</span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider border border-amber-500/30">
-                      Pending Admin Processing
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                      placedOrder.paymentStatus === 'Paid'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    }`}>
+                      {placedOrder.paymentStatus === 'Paid' ? 'Paid & Auto-Confirmed' : 'Pending Processing'}
+                    </span>
+                  </div>
+
+                  {placedOrder.paymentId && (
+                    <div className="flex justify-between items-center pt-1 text-[11px]">
+                      <span className="text-slate-400">
+                        {placedOrder.paymentStatus === 'Paid' ? 'Razorpay Payment ID:' : 'UPI UTR Ref:'}
+                      </span>
+                      <span className="font-mono font-bold text-white bg-black/40 px-2 py-0.5 rounded border border-brand-border/80">
+                        {placedOrder.paymentId}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center text-[11px]">
+                    <span className="text-slate-400">Payment Mode:</span>
+                    <span className="font-medium text-slate-200 truncate max-w-[180px]">
+                      {placedOrder.paymentMethod}
                     </span>
                   </div>
                 </div>
@@ -780,8 +1116,22 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                   disabled={loading}
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-gold via-brand-gold-light to-brand-gold-dark text-brand-dark font-bold text-xs uppercase tracking-widest hover:brightness-110 shadow-gold-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{loading ? 'Submitting Order & Emailing Admin...' : `Confirm Order (${totalSets} Sets · ₹${totalAmount.toLocaleString('en-IN')})`}</span>
+                  {formData.paymentMethod.includes('Razorpay') ? (
+                    <Zap className="w-4 h-4 text-brand-dark fill-brand-dark" />
+                  ) : formData.paymentMethod.includes('UPI QR') ? (
+                    <QrCode className="w-4 h-4" />
+                  ) : (
+                    <CheckCircle2 className="w-4 h-4" />
+                  )}
+                  <span>
+                    {loading ? (
+                      formData.paymentMethod.includes('Razorpay') ? 'Processing Razorpay Secure Payment...' : 'Submitting Order & Emailing Admin...'
+                    ) : (
+                      formData.paymentMethod.includes('Razorpay') ? `Pay ₹${totalAmount.toLocaleString('en-IN')} via Razorpay` :
+                      formData.paymentMethod.includes('UPI QR') ? `Confirm UPI Payment (₹${totalAmount.toLocaleString('en-IN')})` :
+                      `Confirm Order (${totalSets} Sets · ₹${totalAmount.toLocaleString('en-IN')})`
+                    )}
+                  </span>
                 </button>
               )}
             </div>
