@@ -36,7 +36,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ? `${import.meta.env.VITE_API
 async function request(endpoint, options = {}) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000); // 6s fast timeout
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s realistic timeout for email & DB operations
 
     const token = localStorage.getItem('jmr_auth_token');
     

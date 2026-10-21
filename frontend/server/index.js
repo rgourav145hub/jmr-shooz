@@ -539,6 +539,16 @@ function sendJson(req, res, statusCode, data) {
 }
 
 function parseBody(req, maxBytes = 10485760) {
+  if (req.body && typeof req.body === 'object') {
+    return Promise.resolve(req.body);
+  }
+  if (typeof req.body === 'string') {
+    try {
+      return Promise.resolve(req.body ? JSON.parse(req.body) : {});
+    } catch {
+      return Promise.resolve({});
+    }
+  }
   return new Promise((resolve, reject) => {
     let body = '';
     let size = 0;
@@ -555,7 +565,7 @@ function parseBody(req, maxBytes = 10485760) {
       try {
         resolve(body ? JSON.parse(body) : {});
       } catch (err) {
-        reject(err);
+        resolve({});
       }
     });
     req.on('error', reject);
@@ -598,7 +608,7 @@ function generateToken(user) {
   );
 }
 
-const server = http.createServer(async (req, res) => {
+export async function handleRequest(req, res) {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     setCorsHeaders(req, res);
@@ -1898,9 +1908,16 @@ const server = http.createServer(async (req, res) => {
     console.error('Server API error:', err);
     sendJson(req, res, 500, { error: 'Internal Server Error', details: err.message });
   }
-});
+}
 
-server.listen(PORT, () => {
-  console.log(`🚀 JMR Shooz PostgreSQL API Server running at http://localhost:${PORT}`);
-  console.log(`📊 Health Endpoint: http://localhost:${PORT}/api/health`);
-});
+export default handleRequest;
+
+const server = http.createServer(handleRequest);
+
+// Listen if run directly
+if (!process.env.VERCEL) {
+  server.listen(PORT, () => {
+    console.log(`🚀 JMR Shooz API Server running at http://localhost:${PORT}`);
+    console.log(`📊 Health Endpoint: http://localhost:${PORT}/api/health`);
+  });
+}

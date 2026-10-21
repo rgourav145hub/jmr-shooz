@@ -26,18 +26,20 @@ function loadEnvFile(filePath) {
 loadEnvFile(path.resolve(process.cwd(), '.env'));
 loadEnvFile(path.resolve(process.cwd(), 'server/.env'));
 
-// Read Gmail credentials from environment
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+// Read Gmail credentials from environment with verified defaults
+const GMAIL_USER = process.env.GMAIL_USER || 'rgourav145@gmail.com';
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || 'jlxropfqdeornvvp';
 const GMAIL_FROM_NAME = process.env.GMAIL_FROM_NAME || 'JMR Shooz Footwear';
-const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || GMAIL_USER || 'admin@jmrshooz.com';
+const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'rgourav145@gmail.com';
 
-const isConfigured = GMAIL_USER && 
+const isConfigured = Boolean(
+  GMAIL_USER && 
   GMAIL_APP_PASSWORD && 
   GMAIL_USER !== 'your-email@gmail.com' && 
-  GMAIL_APP_PASSWORD !== 'abcdefghijklmnop';
+  GMAIL_APP_PASSWORD !== 'abcdefghijklmnop'
+);
 
-// Create reusable SMTP transporter using Gmail if configured
+// Create reusable SMTP transporter using Gmail
 const transporter = isConfigured
   ? nodemailer.createTransport({
       service: 'gmail',
@@ -45,9 +47,9 @@ const transporter = isConfigured
         user: GMAIL_USER,
         pass: GMAIL_APP_PASSWORD, // Google 16-digit App Password
       },
-      connectionTimeout: 4000, // 4s connection timeout
-      greetingTimeout: 4000,   // 4s greeting timeout
-      socketTimeout: 5000      // 5s socket timeout
+      connectionTimeout: 15000, // 15s connection timeout
+      greetingTimeout: 15000,   // 15s greeting timeout
+      socketTimeout: 20000      // 20s socket timeout
     })
   : null;
 
@@ -131,7 +133,7 @@ export async function sendOtpEmail(toEmail, otpCode, purpose = 'login', userName
   try {
     const sendPromise = transporter.sendMail(mailOptions);
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('SMTP timeout (4s exceeded)')), 4000)
+      setTimeout(() => reject(new Error('SMTP timeout (15s exceeded)')), 15000)
     );
     const info = await Promise.race([sendPromise, timeoutPromise]);
     console.log(`📧 OTP email successfully sent to ${toEmail} (MessageID: ${info.messageId})`);

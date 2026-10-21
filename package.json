@@ -1,17 +1,17 @@
 {
-  "name": "devcraft-workspace",
+  "name": "jmr-shooz-platform",
   "version": "1.0.0",
   "private": true,
-  "description": "Full-stack web applications and software development workspace",
+  "type": "module",
+  "description": "JMR Shooz Footwear Platform",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "dev:frontend": "npm --prefix frontend run dev",
-    "build": "npm --prefix frontend run build",
-    "build:frontend": "npm --prefix frontend run build",
-    "dev:backend": "python backend/main.py",
-    "lint:frontend": "npm --prefix frontend run lint"
+    "build": "npm --prefix frontend run build"
   },
-  "keywords": ["web-development", "react", "fastapi", "typescript", "software"],
-  "author": "",
-  "license": "MIT"
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^10.0.10",
+    "pg": "^8.23.0"
+  }
 }
