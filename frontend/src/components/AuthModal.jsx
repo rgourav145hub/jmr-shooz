@@ -481,10 +481,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
         className="relative w-full max-w-lg bg-brand-surface border border-brand-border rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Modal Top Header */}
-        <div className="px-6 py-4 border-b border-brand-border bg-brand-dark flex items-center justify-between">
+        {/* Modal Top Header - Flipkart Royal Blue */}
+        <div className="px-6 py-4 border-b border-blue-600 bg-[#2874f0] flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-brand-card border border-brand-gold/40 flex items-center justify-center text-brand-gold shadow-gold-sm">
+            <div className="w-10 h-10 rounded-xl bg-white/20 border border-white/30 flex items-center justify-center text-white shadow-sm">
               <Lock className="w-5 h-5" />
             </div>
             <div>
@@ -495,12 +495,12 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
                   {mode === 'register' && 'Create New Account'}
                   {mode === 'forgot' && 'Reset Account Password'}
                 </h3>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 text-white text-[10px] font-bold border border-white/30">
                   <ShieldCheck className="w-3 h-3" />
                   <span>B2B Verified</span>
                 </span>
               </div>
-              <p className="text-xs text-brand-muted">
+              <p className="text-xs text-blue-100">
                 JMR Shooz Authorized B2B Distribution Network
               </p>
             </div>
@@ -508,18 +508,18 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full bg-brand-card text-slate-400 hover:text-white hover:bg-brand-cardHover transition-colors"
+            className="p-1.5 rounded-full bg-white/20 text-white hover:bg-white/30 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Role Toggle Selector: Retailer / Store Portal vs Admin Suite */}
-        <div className="bg-brand-dark/80 px-6 py-2.5 border-b border-brand-border/80 flex items-center justify-between gap-2">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+        <div className="bg-slate-50 px-6 py-2.5 border-b border-slate-200 flex items-center justify-between gap-2">
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
             Select Role:
           </span>
-          <div className="flex items-center gap-1.5 p-1 bg-brand-surface rounded-xl border border-brand-border">
+          <div className="flex items-center gap-1.5 p-1 bg-white rounded-xl border border-slate-200">
             <button
               type="button"
               onClick={() => {
@@ -530,8 +530,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
               }}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                 selectedRole === 'retailer'
-                  ? 'bg-brand-gold text-brand-dark shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-[#2874f0] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Store className="w-3.5 h-3.5" />
@@ -548,8 +548,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
               }}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                 selectedRole === 'admin'
-                  ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-purple-300'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-purple-700'
               }`}
             >
               <ShieldCheck className="w-3.5 h-3.5" />
@@ -560,13 +560,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
 
         {/* Tab Switcher */}
         {mode !== 'forgot' && (
-          <div className="flex border-b border-brand-border bg-brand-dark/50">
+          <div className="flex border-b border-slate-200 bg-slate-50">
             <button
               onClick={() => { setMode('login'); setError(''); }}
               className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center justify-center gap-1.5 ${
                 mode === 'login' 
-                  ? 'border-brand-gold text-brand-gold bg-brand-surface' 
-                  : 'border-transparent text-slate-400 hover:text-white'
+                  ? 'border-[#2874f0] text-[#2874f0] bg-white' 
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
               <KeyRound className="w-3.5 h-3.5" />
@@ -577,8 +577,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
               onClick={() => { setMode('otp'); setError(''); }}
               className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center justify-center gap-1.5 ${
                 mode === 'otp' 
-                  ? 'border-brand-gold text-brand-gold bg-brand-surface' 
-                  : 'border-transparent text-slate-400 hover:text-white'
+                  ? 'border-[#2874f0] text-[#2874f0] bg-white' 
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
               <Smartphone className="w-3.5 h-3.5" />
@@ -589,8 +589,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'login', init
               onClick={() => { setMode('register'); setError(''); }}
               className={`flex-1 py-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 flex items-center justify-center gap-1.5 ${
                 mode === 'register' 
-                  ? 'border-brand-gold text-brand-gold bg-brand-surface' 
-                  : 'border-transparent text-slate-400 hover:text-white'
+                  ? 'border-[#2874f0] text-[#2874f0] bg-white' 
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
               }`}
             >
               <UserPlus className="w-3.5 h-3.5" />

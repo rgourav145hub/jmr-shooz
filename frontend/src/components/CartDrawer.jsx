@@ -304,41 +304,41 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="absolute inset-0" onClick={closeCart} />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 z-10">
-        <div className="w-full sm:w-screen max-w-full sm:max-w-lg bg-brand-surface border-l border-brand-border flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+        <div className="w-full sm:w-screen max-w-full sm:max-w-lg bg-white border-l border-slate-200 flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
           
           {/* Header */}
-          <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-brand-dark border-b border-brand-border flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-[#2874f0] text-white border-b border-blue-600 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-brand-card border border-brand-gold/40 flex items-center justify-center text-brand-gold shadow-gold-sm">
-                <ShoppingBag className="w-4 h-4" />
+              <div className="w-9 h-9 rounded-md bg-white/15 flex items-center justify-center text-white shadow-xs">
+                <ShoppingBag className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-white tracking-wide flex items-center gap-2">
                   <span>Wholesale Cart</span>
                   {totalItems > 0 && (
-                    <span className="px-2 py-0.5 rounded-full bg-brand-gold text-brand-dark text-[11px] font-black">
+                    <span className="px-2 py-0.5 rounded-full bg-[#ffea00] text-slate-950 text-[11px] font-black">
                       {totalItems} {totalItems === 1 ? 'item' : 'items'}
                     </span>
                   )}
                 </h3>
-                <p className="text-[11px] text-brand-muted">Direct Manufacturer Bulk Allocation</p>
+                <p className="text-[11px] text-blue-100">Direct Manufacturer Bulk Allocation</p>
               </div>
             </div>
 
             <button
               onClick={closeCart}
-              className="p-1.5 rounded-xl bg-brand-card text-slate-400 hover:text-white hover:bg-brand-cardHover transition-colors border border-brand-border cursor-pointer"
+              className="p-1.5 rounded-md text-white hover:bg-blue-600 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3.5 bg-[#f1f2f4]">
             
             {/* Error Banner */}
             {error && (
@@ -352,19 +352,19 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
             {checkoutStep === 'cart' && (
               <>
                 {cartItems.length === 0 ? (
-                  <div className="py-16 text-center space-y-4">
-                    <div className="w-16 h-16 rounded-2xl bg-brand-card border border-brand-border flex items-center justify-center mx-auto text-slate-500">
+                  <div className="py-16 text-center space-y-4 bg-white rounded-xl border border-slate-200">
+                    <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center mx-auto text-[#2874f0]">
                       <ShoppingBag className="w-8 h-8 stroke-1" />
                     </div>
                     <div>
-                      <h4 className="text-base font-bold text-white">Your Cart is Empty</h4>
-                      <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+                      <h4 className="text-base font-bold text-slate-900">Your Cart is Empty</h4>
+                      <p className="text-xs text-slate-500 mt-1 max-w-xs mx-auto">
                         Explore our authorized brands collection and add articles to build your wholesale order.
                       </p>
                     </div>
                     <button
                       onClick={closeCart}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-gold text-brand-dark font-bold text-xs uppercase tracking-wider hover:brightness-110 shadow-gold-sm transition-all cursor-pointer"
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-sm bg-[#2874f0] text-white font-bold text-xs uppercase tracking-wider hover:bg-blue-600 shadow-sm transition-all cursor-pointer"
                     >
                       <span>Explore Catalog</span>
                       <ArrowRight className="w-4 h-4" />
@@ -372,11 +372,11 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between text-xs text-slate-400 pb-1 border-b border-brand-border/60">
+                    <div className="flex items-center justify-between text-xs text-slate-600 pb-1 border-b border-slate-200">
                       <span>{cartItems.length} Products in Batch</span>
                       <button
                         onClick={clearCart}
-                        className="text-red-400 hover:text-red-300 font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
+                        className="text-red-600 hover:text-red-700 font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 className="w-3 h-3" />
                         <span>Clear All</span>
@@ -394,10 +394,10 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                         return (
                           <div 
                             key={item.id}
-                            className="p-3.5 rounded-2xl bg-brand-card/70 border border-brand-border hover:border-brand-gold/40 transition-all flex gap-3 relative group"
+                            className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-[#2874f0]/50 transition-all flex gap-3 relative group shadow-xs"
                           >
                             {/* Image */}
-                            <div className="w-20 h-20 rounded-xl bg-black/40 border border-brand-border/60 overflow-hidden flex-shrink-0 flex items-center justify-center p-1">
+                            <div className="w-20 h-20 rounded-lg bg-slate-50 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-1">
                               <img
                                 src={item.image}
                                 alt={item.name}
@@ -409,72 +409,71 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                             <div className="flex-1 min-w-0 flex flex-col justify-between">
                               <div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-[10px] font-bold uppercase tracking-wider text-brand-gold">
+                                  <span className="text-[10px] font-bold uppercase tracking-wider text-[#2874f0] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                                     {item.brandName}
                                   </span>
                                   <button
                                     onClick={() => removeFromCart(item.id || item.productId)}
-                                    className="text-slate-500 hover:text-red-400 p-1 rounded transition-colors cursor-pointer"
+                                    className="text-slate-400 hover:text-red-500 p-1 rounded transition-colors cursor-pointer"
                                     title="Remove article"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
                                 </div>
-                                <h5 className="text-sm font-bold text-white truncate">{item.name}</h5>
+                                <h5 className="text-sm font-bold text-slate-900 truncate mt-0.5">{item.name}</h5>
                                 
                                 <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                                  <span className="px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-300 text-[10px] font-mono font-bold border border-amber-400/20">
-                                    1 Set = {pairsPerSet} Pairs
+                                  <span className="px-1.5 py-0.5 rounded bg-blue-50 text-[#2874f0] text-[10px] font-mono font-bold border border-blue-200">
+                                    1 Set = {pairsPerSet} Prs
                                   </span>
                                   {item.color && (
-                                    <span className="px-1.5 py-0.5 rounded bg-brand-gold/15 text-brand-gold text-[10px] font-semibold border border-brand-gold/30 inline-flex items-center gap-1">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-brand-gold"></span>
+                                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200 inline-flex items-center gap-1">
                                       Color: {item.color}
                                     </span>
                                   )}
                                   {item.sizeCurve && (
-                                    <span className="text-[10px] text-slate-400 font-mono truncate max-w-[150px]">
+                                    <span className="text-[10px] text-slate-500 font-mono truncate max-w-[150px]">
                                       {item.sizeCurve}
                                     </span>
                                   )}
                                 </div>
                               </div>
 
-                              <div className="flex items-center justify-between mt-2 pt-2 border-t border-brand-border/40">
+                              <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-100">
                                 <div>
                                   <div className="flex items-baseline gap-1">
-                                    <span className="text-sm font-black text-white font-mono">
+                                    <span className="text-sm font-black text-slate-900 font-mono">
                                       ₹{ratePerSet.toLocaleString('en-IN')}
                                     </span>
-                                    <span className="text-[10px] text-slate-400">/set</span>
+                                    <span className="text-[10px] text-slate-500">/set</span>
                                   </div>
-                                  <span className="text-[10px] text-brand-gold font-mono block">
+                                  <span className="text-[10px] text-[#388e3c] font-bold font-mono block">
                                     (MRP: ₹{ratePerPair}/pair · {linePairs} Total Pairs)
                                   </span>
                                 </div>
 
                                 {/* Sets Quantity Selector */}
-                                <div className="flex items-center gap-1 bg-brand-surface rounded-xl border border-brand-border p-1">
+                                <div className="flex items-center gap-1 bg-slate-100 rounded-md border border-slate-200 p-0.5">
                                   <button
                                     type="button"
                                     onClick={() => updateQuantity(item.id || item.productId, sets - 1)}
-                                    className="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-white hover:bg-brand-card rounded-lg transition-colors cursor-pointer"
+                                    className="w-6 h-6 flex items-center justify-center text-slate-700 hover:bg-white rounded transition-colors cursor-pointer"
                                     title="Decrease sets"
                                   >
                                     <Minus className="w-3 h-3" />
                                   </button>
-                                  <div className="text-center px-1.5 min-w-[40px]">
-                                    <span className="font-mono font-bold text-xs text-white block leading-tight">
+                                  <div className="text-center px-1.5 min-w-[36px]">
+                                    <span className="font-mono font-bold text-xs text-slate-900 block leading-tight">
                                       {sets}
                                     </span>
-                                    <span className="text-[9px] text-brand-gold uppercase tracking-tighter block leading-none font-bold">
+                                    <span className="text-[9px] text-slate-500 uppercase tracking-tighter block leading-none font-bold">
                                       {sets === 1 ? 'Set' : 'Sets'}
                                     </span>
                                   </div>
                                   <button
                                     type="button"
                                     onClick={() => updateQuantity(item.id || item.productId, sets + 1)}
-                                    className="w-6 h-6 flex items-center justify-center text-slate-300 hover:text-white hover:bg-brand-card rounded-lg transition-colors cursor-pointer"
+                                    className="w-6 h-6 flex items-center justify-center text-slate-700 hover:bg-white rounded transition-colors cursor-pointer"
                                     title="Increase sets"
                                   >
                                     <Plus className="w-3 h-3" />
@@ -483,8 +482,8 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                               </div>
 
                               {/* Customer Article Specification */}
-                              <div className="mt-2.5 pt-2 border-t border-brand-border/40">
-                                <label className="text-[10px] font-semibold text-amber-300/90 block mb-1">
+                              <div className="mt-2.5 pt-2 border-t border-slate-100">
+                                <label className="text-[10px] font-semibold text-slate-700 block mb-1">
                                   Set Specification / विशेष निर्देश (Optional):
                                 </label>
                                 <input
@@ -492,7 +491,7 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                                   value={item.specification || ''}
                                   onChange={(e) => updateItemSpecification(item.id || item.productId, e.target.value)}
                                   placeholder="e.g. Size curve 7-10, carton marking, color details..."
-                                  className="w-full px-2.5 py-1.5 text-xs rounded-lg bg-slate-900 border border-brand-border text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-400 font-sans"
+                                  className="w-full px-2.5 py-1.5 text-xs rounded bg-slate-50 border border-slate-300 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#2874f0] font-sans"
                                 />
                               </div>
                             </div>
@@ -502,8 +501,8 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                     </div>
 
                     {/* Wholesale Assured Banner */}
-                    <div className="p-3 rounded-xl bg-blue-950/20 border border-blue-500/30 text-xs text-blue-300 flex items-center gap-2.5">
-                      <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0" />
+                    <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-[#2874f0] flex items-center gap-2.5 font-medium">
+                      <ShieldCheck className="w-4 h-4 text-[#2874f0] shrink-0" />
                       <span>Direct Tier-1 Factory Wholesale Packing: Sold strictly in complete carton sets</span>
                     </div>
                   </div>
@@ -1070,7 +1069,7 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                 <div className="pt-2">
                   <button
                     onClick={closeCart}
-                    className="w-full py-3 rounded-xl bg-brand-gold text-brand-dark font-bold text-xs uppercase tracking-widest hover:brightness-110 shadow-gold-sm transition-all cursor-pointer"
+                    className="w-full py-3 rounded-sm bg-[#2874f0] text-white font-bold text-xs uppercase tracking-wider hover:bg-blue-600 shadow-sm transition-all cursor-pointer"
                   >
                     Done & Return to Catalog
                   </button>
@@ -1082,19 +1081,19 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
 
           {/* Footer Bar */}
           {checkoutStep !== 'success' && cartItems.length > 0 && (
-            <div className="p-6 bg-brand-dark border-t border-brand-border space-y-3">
+            <div className="p-5 bg-white border-t border-slate-200 space-y-3">
               <div className="space-y-1.5 text-xs">
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-slate-600">
                   <span>Total Ordered Sets:</span>
-                  <span className="font-mono text-white font-bold">{totalSets} Sets ({totalPairs} Pairs)</span>
+                  <span className="font-mono text-slate-900 font-bold">{totalSets} Sets ({totalPairs} Pairs)</span>
                 </div>
-                <div className="flex justify-between text-slate-400">
+                <div className="flex justify-between text-slate-600">
                   <span>Hub Inspection & Packing:</span>
-                  <span className="text-emerald-400 font-bold">Free / Included</span>
+                  <span className="text-[#388e3c] font-bold">Free / Included</span>
                 </div>
-                <div className="flex justify-between items-baseline pt-2 border-t border-brand-border/60">
-                  <span className="text-sm font-bold text-white uppercase tracking-wider">Grand Total:</span>
-                  <span className="text-xl font-black text-brand-gold font-mono">
+                <div className="flex justify-between items-baseline pt-2 border-t border-slate-200">
+                  <span className="text-sm font-bold text-slate-900 uppercase tracking-wider">Grand Total:</span>
+                  <span className="text-2xl font-black text-slate-900 font-mono">
                     ₹{totalAmount.toLocaleString('en-IN')}
                   </span>
                 </div>
@@ -1104,7 +1103,7 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                 <button
                   type="button"
                   onClick={handleProceedToCheckout}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-gold via-brand-gold-light to-brand-gold-dark text-brand-dark font-bold text-xs uppercase tracking-widest hover:brightness-110 shadow-gold-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3.5 rounded-sm bg-[#fb641b] hover:bg-[#e85b17] text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                 >
                   <span>Proceed to Dispatch Details</span>
                   <ArrowRight className="w-4 h-4" />
@@ -1114,10 +1113,10 @@ export default function CartDrawer({ onOrderSuccess, openAuthModal }) {
                   type="submit"
                   form="order-checkout-form"
                   disabled={loading}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-brand-gold via-brand-gold-light to-brand-gold-dark text-brand-dark font-bold text-xs uppercase tracking-widest hover:brightness-110 shadow-gold-sm transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 rounded-sm bg-[#fb641b] hover:bg-[#e85b17] text-white font-bold text-xs uppercase tracking-wider shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
                 >
                   {formData.paymentMethod.includes('Razorpay') ? (
-                    <Zap className="w-4 h-4 text-brand-dark fill-brand-dark" />
+                    <Zap className="w-4 h-4 text-white fill-white" />
                   ) : formData.paymentMethod.includes('UPI QR') ? (
                     <QrCode className="w-4 h-4" />
                   ) : (

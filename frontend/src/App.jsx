@@ -159,7 +159,7 @@ function AppContent() {
 
   return (
     <AdminEditProvider onNotification={(toastData) => setToast(toastData)}>
-      <div className="min-h-screen bg-brand-dark text-slate-100 flex flex-col font-sans selection:bg-brand-gold selection:text-brand-dark pb-16 md:pb-0">
+      <div className="min-h-screen bg-[#f1f2f4] text-[#212121] flex flex-col font-sans selection:bg-[#2874f0] selection:text-white pb-16 md:pb-0">
       
       {/* Navbar */}
       <Navbar
